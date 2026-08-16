@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEXUS — Audio Reactive Mathematical SDF</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#050509;color:#dfe7ff;font-family:system-ui,sans-serif}
+canvas{width:100%;height:100%;display:block}
+#hud{position:fixed;left:16px;top:16px;padding:12px 14px;background:#050509cc;border:1px solid #39415c;border-radius:10px;backdrop-filter:blur(8px);font:12px ui-monospace,monospace;line-height:1.55}
+button{margin-top:8px;background:#11182b;color:#dfe7ff;border:1px solid #56607e;border-radius:6px;padding:6px 10px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  NEXUS / shared-field example<br>
+  SDF + audio forcing + temporal rotor<br>
+  <span id="status">audio: idle</span><br>
+  <button id="start">Start microphone</button>
+</div>
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+let W=innerWidth,H=innerHeight,DPR=Math.min(devicePixelRatio||1,2);
+let audio={bass:0,mid:0,high:0};
+let analyser=null,data=null,stream=null;
+function resize(){W=innerWidth;H=innerHeight;canvas.width=W*DPR;canvas.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}
+addEventListener('resize',resize);resize();
+
+// Shared mathematical field. The renderer and the controller consume the same values.
+function field(x,y,t){
+  const r=Math.hypot(x,y);
+  const a=0.12*audio.bass;
+  const b=0.08*audio.mid;
+  const c=0.05*audio.high;
+  const rotor=t*0.00035 + a*1.7;
+  const xr=x*Math.cos(rotor)-y*Math.sin(rotor);
+  const yr=x*Math.sin(rotor)+y*Math.cos(rotor);
+  return Math.sin(7*r+3*Math.sin(yr*4+t*.001))*0.22
+       +Math.cos(5*xr-2*yr+t*.0012)*0.16
+       +Math.sin(11*yr+t*.002)*b
+       -r*(0.34+c);
+}
+
+function palette(v){
+  const q=Math.max(0,Math.min(1,.5+.5*v));
+  return `rgb(${Math.floor(30+180*q)},${Math.floor(45+170*(1-q))},${Math.floor(90+150*q)})`;
+}
+
+function render(t){
+  const image=ctx.createImageData(W,H),p=image.data;
+  const scale=Math.min(W,H)/3.0;
+  for(let py=0;py<H;py+=2){
+    for(let px=0;px<W;px+=2){
+      const x=(px-W/2)/scale,y=(py-H/2)/scale;
+      const v=field(x,y,t);
+      const edge=Math.exp(-24*Math.abs(v));
+      const glow=Math.exp(-3*Math.abs(v));
+      const c=palette(.5+v*1.4);
+      const m=/rgb\\(([^,]+),([^,]+),([^\)]+)\\)/.exec(c);
+      const R=Number(m[1])*glow+255*edge;
+      const G=Number(m[2])*glow+255*edge;
+      const B=Number(m[3])*glow+255*edge;
+      for(let dy=0;dy<2 && py+dy<H;dy++)for(let dx=0;dx<2 && px+dx<W;dx++){
+        const i=((py+dy)*W+(px+dx))*4;
+        p[i]=R;p[i+1]=G;p[i+2]=B;p[i+3]=255;
+      }
+    }
+  }
+  ctx.putImageData(image,0,0);
+  requestAnimationFrame(render);
+}
+
+async function startAudio(){
+  stream=await navigator.mediaDevices.getUserMedia({audio:true});
+  const ac=new AudioContext();
+  const src=ac.createMediaStreamSource(stream);
+  analyser=ac.createAnalyser(); analyser.fftSize=1024;
+  data=new Uint8Array(analyser.frequencyBinCount); src.connect(analyser);
+  document.getElementById('status').textContent='audio: live';
+  function sample(){
+    analyser.getByteFrequencyData(data);
+    const band=(a,b)=>{let s=0;for(let i=a;i<b;i++)s+=data[i]||0;return s/Math.max(1,b-a)/255};
+    audio.bass=audio.bass*.82+band(1,8)*.18;
+    audio.mid=audio.mid*.82+band(8,45)*.18;
+    audio.high=audio.high*.82+band(45,160)*.18;
+    requestAnimationFrame(sample);
+  }
+  sample();
+}
+document.getElementById('start').onclick=()=>startAudio().catch(e=>document.getElementById('status').textContent='audio: '+e.message);
+requestAnimationFrame(render);
+</script>
+</body>
+</html>
