@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEXUS Mathematical Field Runtime</title>
+<style>html,body{margin:0;height:100%;overflow:hidden;background:#050509;color:#dfe7ff;font-family:system-ui}canvas{display:block;width:100%;height:100%}#hud{position:fixed;top:12px;left:12px;padding:10px 12px;border:1px solid #334;background:#080914cc;border-radius:10px;font:12px monospace;backdrop-filter:blur(8px)}</style>
+</head>
+<body>
+<div id="hud">FIELD RUNTIME · <span id="state">booting</span></div>
+<canvas id="c"></canvas>
+<script type="module">
+import {createFieldState, cloneBranch, applyFieldMutation, fieldResidual} from '../../../field-runtime/core/field-runtime.js';
+const canvas=document.querySelector('#c'); const ctx=canvas.getContext('2d'); const hud=document.querySelector('#state');
+let state=createFieldState(); let branchA=cloneBranch(state,'A'); let branchB=cloneBranch(state,'B');
+let audioLevel=0, t=0;
+function resize(){canvas.width=innerWidth*devicePixelRatio;canvas.height=innerHeight*devicePixelRatio;}
+addEventListener('resize',resize);resize();
+addEventListener('pointermove',e=>{const g=(e.clientX/innerWidth-.5)*2; state=applyFieldMutation(state,{streams:{gesture:{x:e.clientX/innerWidth,y:e.clientY/innerHeight}},rotor:{phase:g}});});
+async function audio(){try{const s=await navigator.mediaDevices.getUserMedia({audio:true});const a=new AudioContext();const src=a.createMediaStreamSource(s);const an=a.createAnalyser();an.fftSize=256;src.connect(an);const d=new Uint8Array(an.frequencyBinCount);function tick(){an.getByteFrequencyData(d);audioLevel=d.reduce((x,y)=>x+y,0)/d.length/255;requestAnimationFrame(tick)}tick();}catch(e){hud.textContent='audio unavailable; field still live';}}
+audio();
+function frame(){t+=.016; const w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);const cx=w/2,cy=h/2;const R=Math.min(w,h)*.28*(1+audioLevel*.25);ctx.beginPath();
+for(let i=0;i<=720;i++){const a=i*Math.PI*2/720;const warp=Math.sin(a*7+t*2+state.rotor.phase)*18*audioLevel;const r=R+warp;const x=cx+Math.cos(a+t*.25)*r;const y=cy+Math.sin(a+t*.25)*r*.62;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.closePath();ctx.strokeStyle=`hsla(${(t*35)%360},90%,70%,.9)`;ctx.lineWidth=2;ctx.stroke();
+branchA=applyFieldMutation(branchA,{field:{parameters:{scale:1+audioLevel*.5}},rotor:{phase:t}});branchB=applyFieldMutation(branchB,{field:{parameters:{scale:1+audioLevel*.2}},rotor:{phase:-t}});hud.textContent=`frame ${state.frame} · residual ${fieldResidual(state).toFixed(4)} · branches A/B · audio ${audioLevel.toFixed(3)}`;requestAnimationFrame(frame)} frame();
+</script></body></html>
