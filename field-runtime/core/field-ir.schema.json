@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "nexus://field-runtime/core/field-ir.schema.json",
+  "title": "NEXUS Mathematical Field IR",
+  "type": "object",
+  "required": ["version", "frame", "field", "rotor", "certificate"],
+  "properties": {
+    "version": {"type": "string"},
+    "frame": {"type": "integer", "minimum": 0},
+    "timestamp": {"type": "number"},
+    "field": {
+      "type": "object",
+      "required": ["kind", "expression"],
+      "properties": {
+        "kind": {"enum": ["sdf", "scalar", "vector", "neural-implicit"]},
+        "expression": {"type": "string"},
+        "dimension": {"type": "integer", "minimum": 1},
+        "parameters": {"type": "object"},
+        "gradient": {"type": "string"},
+        "hessian": {"type": "string"}
+      }
+    },
+    "rotor": {
+      "type": "object",
+      "properties": {
+        "representation": {"enum": ["clifford", "quaternion", "phase-vector"]},
+        "phase": {"type": "number"},
+        "amplitude": {"type": "number"},
+        "coupling": {"type": "number"},
+        "axis": {"type": "array", "items": {"type": "number"}}
+      }
+    },
+    "streams": {"type": "object", "additionalProperties": {"type": "object"}},
+    "branches": {"type": "array", "items": {"type": "string"}},
+    "certificate": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {"enum": ["unverified", "approximate", "verified"]},
+        "method": {"type": "string"},
+        "residual": {"type": ["number", "null"]},
+        "proof": {"type": ["string", "null"]}
+      }
+    }
+  }
+}
