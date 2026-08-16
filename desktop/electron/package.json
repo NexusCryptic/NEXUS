@@ -12,6 +12,6 @@
     "electron:version": "electron --version"
   },
   "devDependencies": {
-    "electron": "^37.0.0"
+    "electron": "43.2.0"
   }
 }
