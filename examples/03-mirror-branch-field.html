@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEXUS — Offscreen Mirror Branch Field</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#03050a}canvas{display:block;width:100%;height:100%}
+#hud{position:fixed;left:12px;top:12px;color:#dfe7ff;background:#03050acc;border:1px solid #37415e;border-radius:9px;padding:10px;font:12px ui-monospace,monospace}
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="hud">NEXUS / state fork → branch A + branch B + mirror → composite<br><span id="metric"></span></div>
+<script>
+const view=document.getElementById('view'),ctx=view.getContext('2d');
+const A=document.createElement('canvas'),B=document.createElement('canvas');
+const ac=A.getContext('2d'),bc=B.getContext('2d');
+let W=innerWidth,H=innerHeight;
+function size(){W=innerWidth;H=innerHeight;view.width=A.width=B.width=W;view.height=A.height=B.height=H}
+addEventListener('resize',size);size();
+
+// The state fork happens before rendering. Both branches begin from the same field.
+function sourceField(x,y,t){
+  const r=Math.hypot(x,y);
+  return Math.sin(7*r-t*.001)+.35*Math.cos(5*x+3*y+t*.0007)-r*.8;
+}
+
+function drawBranch(g,transform,t){
+  g.clearRect(0,0,W,H);
+  const image=g.createImageData(W,H),p=image.data;
+  const sx=Math.min(W,H)/3;
+  for(let y=0;y<H;y+=3)for(let x=0;x<W;x+=3){
+    let qx=(x-W/2)/sx,qy=(y-H/2)/sx;
+    [qx,qy]=transform(qx,qy,t);
+    const f=sourceField(qx,qy,t);
+    const edge=Math.exp(-20*Math.abs(f));
+    const glow=Math.exp(-2*Math.abs(f));
+    const R=25+190*edge+50*glow;
+    const G=45+120*glow;
+    const B=95+150*edge;
+    for(let dy=0;dy<3 && y+dy<H;dy++)for(let dx=0;dx<3 && x+dx<W;dx++){
+      const i=((y+dy)*W+(x+dx))*4;p[i]=R;p[i+1]=G;p[i+2]=B;p[i+3]=255;
+    }
+  }
+  g.putImageData(image,0,0);
+}
+
+function branchA(x,y,t){const a=.45*Math.sin(t*.0005);return [x*Math.cos(a)-y*Math.sin(a),x*Math.sin(a)+y*Math.cos(a)]}
+function branchB(x,y,t){const a=-.35*Math.cos(t*.0004);return [1.15*x*Math.cos(a)+.3*Math.sin(y),.85*y*Math.sin(a)+.25*Math.cos(x)]}
+
+function frame(t){
+  // Branch A and B are independent transformations of the same source field.
+  drawBranch(ac,branchA,t);drawBranch(bc,branchB,t);
+
+  // Offscreen mirror operation: B is reflected and composited over A.
+  ctx.clearRect(0,0,W,H);
+  ctx.globalAlpha=.78;ctx.drawImage(A,0,0);
+  ctx.save();ctx.translate(W,0);ctx.scale(-1,1);ctx.globalAlpha=.42;ctx.drawImage(B,0,0);ctx.restore();
+
+  // A second nonlinear mirror layer demonstrates recurrence without changing source state.
+  ctx.save();ctx.globalCompositeOperation='screen';ctx.globalAlpha=.16;
+  ctx.translate(W/2,H/2);ctx.rotate(Math.sin(t*.0002)*.05);ctx.scale(.96,.96);ctx.translate(-W/2,-H/2);ctx.drawImage(A,0,0);ctx.restore();
+
+  document.getElementById('metric').textContent='frame='+Math.floor(t)+' | branches=2 | mirror=1 | source-field=shared';
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
