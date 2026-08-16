@@ -1,0 +1,17 @@
+{
+  "name": "nexus-mathematical-field-runtime",
+  "version": "0.2.0",
+  "private": true,
+  "description": "NEXUS Mathematical Field Runtime desktop shell",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron . --enable-gpu-rasterization --enable-zero-copy --ignore-gpu-blocklist",
+    "start:debug": "electron . --enable-logging --enable-gpu-rasterization --enable-zero-copy",
+    "start:software": "electron . --disable-gpu --disable-gpu-compositing",
+    "start:offscreen": "electron . --headless --disable-software-rasterizer",
+    "electron:version": "electron --version"
+  },
+  "devDependencies": {
+    "electron": "^37.0.0"
+  }
+}
