@@ -1,324 +1,234 @@
 # NEXUS — Mathematical Field Runtime
 
-> **Version:** 0.1.0 — Mathematical Field Runtime / Transcendence Rotor / Self-Referential Solver Fabric
->
-> A research architecture for coupling exact symbolic mathematics, Diophantine solving, transcendence-theory strategy selection, Clifford/quaternion rotors, differential geometry, signed-distance fields (SDFs), neural implicit representations, audio/gesture streams, GPU rendering, offscreen mirror graphs, and certificate-driven self-restructuring.
+> A research runtime that treats mathematics, implicit geometry, solver state, audio/gesture streams, and rendering as coordinated views of a shared Mathematical Field Intermediate Representation (Field IR).
 
-## What this is
+## v0.2 integration pass
 
-NEXUS treats a mathematical field as a shared intermediate representation consumed by both a mathematical engine and a rendering engine. The goal is not to make a renderer display a completed equation after the fact; it is to let equations, fields, geometry, audio, gesture, and rendering participate in one asynchronous state graph.
+This iteration turns the earlier architecture into an executable integration boundary.
 
-The central object is conceptually
-
-`F(x,y,z,t,ω) = { f, ∇f, Hf, phase, amplitude, vector field, rotor, residual, certificate, gesture state }`
-
-where `f` may be an analytic function, an SDF, a numerical field, or a neural implicit approximation. Exact symbolic state remains authoritative; numerical and neural representations are acceleration/visualization layers.
-
-## Design principle
+The central idea is:
 
 ```text
-                         MATHEMATICAL STATE
-                                │
-             ┌──────────────────┼──────────────────┐
-             ▼                  ▼                  ▼
-        DISCRETE MATH       TRANSCENDENCE      GEOMETRY/FIELDS
-        Diophantine         Hermite             SDF
-        Gröbner             Lindemann           exp/log maps
-        HNF / LLL            Gelfond-Schneider   Riemannian state
-        Pell / Thue         Baker               Clifford/quaternion
-        modular methods     Mahler              differential fields
-             │                  │                  │
-             └──────────────────┼──────────────────┘
-                                ▼
-                       APPROXIMATION MANIFOLD
-                     CF / Padé / lattice methods
-                                │
-                                ▼
-                          ROTOR CONTROLLER
-                    phase / amplitude / coupling
-                                │
-              ┌─────────────────┼─────────────────┐
-              ▼                 ▼                 ▼
-          EXACT PATH        NUMERIC PATH      VISUAL PATH
-          proof              optimization     ray marching
-              │                 │                 │
-              └─────────────────┼─────────────────┘
-                                ▼
-                          SHARED FIELD F(t)
-                                │
-          ┌─────────────────────┼─────────────────────┐
-          ▼                     ▼                     ▼
-       AUDIO                 GESTURE               CAMERA
-       FFT/bands             vectors               spatial input
-          │                     │                     │
-          └─────────────────────┼─────────────────────┘
-                                ▼
-                     GPU / SHADER FIELD COMPUTE
-                                │
-                                ▼
-                     OFFSCREEN MIRROR GRAPH
-                                │
-                     ┌──────────┼──────────┐
-                     ▼          ▼          ▼
-                   branch A   branch B   branch C
-                     │          │          │
-                     └──────────┼──────────┘
-                                ▼
-                           COMPOSITOR
-                                │
-                                ▼
-                         OBSERVATION LOOP
-                                │
-                                ▼
-                    CERTIFICATE + PERFORMANCE
-                                │
-                                ▼
-                     STRATEGY RESTRUCTURING
-                                │
-                                └──────────► next state
+problem
+  -> mathematical profiler
+  -> exact/approximate strategy selection
+  -> Mathematical Field IR
+  -> field/rotor evolution
+  -> GPU/browser rendering
+  -> observation + residuals
+  -> certificate
+  -> strategy update
+  -> next field state
 ```
 
-## Mathematical solver ecology
+The field is the common interface. The renderer does not merely display a solver result; both consume the same versioned state representation.
 
-The solver is deliberately stratified rather than pretending that one algorithm solves every problem.
+## Mathematical Field IR
 
-### Algebraic layer
+`field-runtime/core/field-ir.schema.json` defines the portable state contract.
 
-- polynomial factorization
-- resultants and elimination
-- Gröbner bases
-- cylindrical algebraic decomposition
-- exact algebraic numbers / root isolation
-- Hermite normal form
-- lattice reduction
+A field state can carry:
 
-### Diophantine layer
+- SDF/scalar/vector/neural-implicit representation
+- symbolic field expression
+- dimension and parameters
+- gradient/Hessian expressions
+- Clifford, quaternion, or phase-vector rotor state
+- audio, gesture, and solver streams
+- branch identifiers
+- certificate status, method, residual, and proof metadata
 
-- integer/rational normalization
-- modular filters
-- Pell-type structures
-- Thue-type structures
-- S-unit-style decomposition hooks
-- lattice/continued-fraction search
-- exact verification with `Reduce`/`Solve`
+`field-runtime/core/field-runtime.js` supplies the first runtime primitives:
 
-### Transcendence layer
+- deterministic field-state creation
+- state branching/forking
+- immutable-style field mutation
+- analytic sphere SDF
+- residual evaluation
 
-Strategy hooks are represented explicitly for:
+## Solver ecology
 
-- Hermite auxiliary-function constructions
-- Lindemann–Weierstrass patterns
-- Gelfond–Schneider patterns
-- Baker linear forms in logarithms
-- Mahler functional equations
-- Siegel–Shidlovsky differential-function patterns
-- Nesterenko-style simultaneous approximation
-- Padé approximation
-- continued fractions
+The architecture accommodates specialized exact and approximate strategies rather than pretending one algorithm solves every problem:
 
-These are **strategy classifiers and research hooks**, not claims that the runtime automatically proves every theorem or decides every transcendence problem.
+- algebraic: factorization, resultants, Gröbner bases, CAD, root isolation
+- Diophantine: HNF/lattice methods, Pell, Thue, modular filters, continued fractions
+- transcendence: Hermite, Lindemann–Weierstrass, Gelfond–Schneider, Baker, Mahler, Siegel–Shidlovsky patterns
+- approximation: Padé, rational approximation, continued fractions, lattice reduction
+- geometry: exponential/logarithmic maps, differential geometry, Riemannian coordinates
+- representation: SDF, implicit fields, neural implicit fields, multiresolution grids
 
-## Rotor model
+Exact symbolic/certificate results remain authoritative. Numeric and neural layers are approximation or visualization layers.
 
-The rotor is a classical state-selection mechanism inspired by geometric algebra. It is not a claim of quantum hardware or quantum advantage.
+## Rotor controller
 
-A strategy state may be represented as
+The rotor is a classical adaptive strategy controller. Its state can contain phase, amplitude, coupling, and representation metadata. A rotor does **not** claim quantum computation or quantum advantage; it is a mathematical state-space abstraction for selecting and blending computational strategies.
 
-`Ψ = Σᵢ aᵢ exp(I θᵢ) |Mᵢ⟩`
-
-with method `Mᵢ`, amplitude `aᵢ`, phase `θᵢ`, and a compatibility score. Updates can use
-
-`θᵢ(t+1) = θᵢ(t) + ωᵢ + λRᵢ(t)`
-
-and
-
-`aᵢ(t+1) = normalize(aᵢ(t) + ηΔᵢ(t))`.
-
-The score can incorporate proof progress, residual reduction, exactness, runtime, numerical stability, and compatibility with the problem profile.
-
-## Clifford and quaternion representation
-
-For low-dimensional spatial rotation, quaternion fallback is convenient:
-
-`v' = q v q⁻¹`.
-
-For generalized geometric algebra, use a rotor:
-
-`v' = R v reverse(R)`
-
-with a normalized rotor. Exponential maps provide the bridge between Lie-algebra-like local coordinates and finite transformations.
-
-## Shared field model
-
-An SDF is represented by
-
-`f(x,y,z) = 0`
-
-for the implicit surface. Its gradient supplies a normal direction
-
-`n = ∇f / ||∇f||`.
-
-Higher derivatives provide curvature/optimization information. The same field can therefore drive symbolic analysis, numerical optimization, ray marching, particles, deformation, and procedural geometry.
-
-For a neural implicit representation, a conceptual form is
-
-`fθ(x) = MLPθ(HashGrid(x))`.
-
-The neural representation remains an approximation. Exact symbolic state and certificates remain the authority layer.
-
-## Real-time architecture
-
-Real-time does not mean zero latency. It means maintaining a bounded frame budget while slow mathematical work continues asynchronously.
-
-`Tframe = Tinput + Tfield + Tsolver + Tgpu + Tcomposite`
-
-At 60 Hz the nominal budget is 16.67 ms; at 120 Hz it is 8.33 ms. A slow proof search must not stall the renderer. The runtime therefore uses versioned field snapshots and asynchronous branches.
+For geometric transformations the intended hierarchy is:
 
 ```text
-FRAME N
- ├── render F[N]
- ├── solve/update F[N+1]
- ├── process audio[N+1]
- └── process gesture[N+1]
-
-FRAME N+1
- ├── render newest committed field
- ├── continue solver
- ├── continue audio
- └── continue gesture
+scalar -> vector -> complex -> quaternion -> Clifford rotor
 ```
 
-## Audio-reactive field
+with quaternions serving as a compact spatial fallback and Clifford rotors providing the generalized geometric-algebra representation.
 
-Audio is converted into measurable forcing terms. For frequency-bin amplitude `Aₖ(t)`, a field can be driven by
+## Real-time field rendering
 
-`f_audio = f_base + A_bass S_scale + A_mid S_rotation + A_high S_detail`.
+`desktop/electron/renderer/index.html` demonstrates the shared-field boundary in a browser renderer.
 
-This makes audio a mathematical forcing function rather than a cosmetic animation trigger.
+The renderer currently provides:
 
-## Gesture field
+- continuous SDF-derived field state
+- pointer/gesture input
+- microphone amplitude/spectrum input when permission is granted
+- frame state progression
+- two state branches derived from a common snapshot
+- live residual display
+- browser Canvas rendering
 
-A gesture stream can be represented as
+The architecture is intentionally asynchronous. A difficult symbolic computation should not block rendering. Target frame budgets depend on actual hardware and pipeline load; this is not a zero-latency claim.
 
-`G(t) = {x,y,dx/dt,dy/dt,acceleration,...}`
+## Electron runtime
 
-and converted into a spatial deformation field. Gesture measurements can drive field position, rotor orientation, curvature, ray direction, sampling density, or procedural parameters.
+`desktop/electron/` provides a dedicated desktop browser shell prepared for the field runtime.
 
-If biomedical signals are used, NEXUS is a visualization/research interface only; it must not infer or diagnose a medical condition from visual or gesture data.
+### Download/configure/run
 
-## Offscreen mirrors and runtime branching
+```bash
+cd desktop/electron
+npm install
+npm run electron:version
+npm start
+```
 
-The important primitive is a **state fork**, not merely a pixel copy.
+The first `npm install` downloads the pinned Electron major-version runtime declared in `package.json`.
 
-Given a committed state `S₀`, branches satisfy
+For a bootstrap that installs Electron when missing and launches with the runtime flags:
 
-`S_A(0) = S_B(0) = S_C(0) = S₀`
+```bash
+./launch-field-runtime.sh
+```
 
-while each branch evolves with a different operator:
+Useful variants:
 
-`S_A(t+1)=F_A(S_A(t))`
+```bash
+npm run start:debug
+npm run start:software
+```
 
-`S_B(t+1)=F_B(S_B(t))`
+The shell uses an isolated preload bridge (`contextIsolation: true`, `nodeIntegration: false`, sandboxing) and requests GPU/WebGPU-related Chromium features where supported by the host build. Actual acceleration remains hardware/driver dependent.
 
-`S_C(t+1)=F_C(S_C(t))`.
+## Runtime branching
 
-Their outputs can be compared, transformed, mirrored, and recombined. An offscreen canvas is therefore both a rendering target and a computational branch boundary.
+A state can be forked:
+
+```text
+S0
+├── branch-A: geometry/visual evolution
+├── branch-B: solver-guided evolution
+└── branch-C: audio/gesture evolution
+```
+
+Each branch receives the same state boundary and can evolve independently. Later versions can add deterministic merge operators and state-difference metrics.
+
+## Offscreen/mirror architecture
+
+The next rendering layer can maintain:
+
+```text
+Field State
+   |
+   +--> Renderer A
+   |
+   +--> Offscreen Renderer B
+   |
+   +--> Transformed Mirror C
+   |
+   +--> Neural/implicit approximation D
+            |
+            +--> compositor
+```
+
+The important unit is the state snapshot rather than the pixels. This allows branches to become separate computational runtimes and makes streamed data pipelines composable.
+
+## Audio and gesture as forcing functions
+
+A future audio layer can map spectral bands into field parameters:
+
+`A_k(t) = |FFT(x(t))_k|`
+
+and construct a field such as:
+
+`f_audio = f_base + A_bass S_scale + A_mid S_rotation + A_high S_detail`
+
+Gesture can similarly be represented as a vector/time state containing position, velocity, acceleration, confidence, and optional externally supplied measurements.
+
+These mappings are visualization/control mechanisms, not medical diagnostic systems.
 
 ## Self-reference without uncontrolled self-modification
 
-The self-referential loop is intentionally constrained:
+The intended self-restructuring model is:
 
-`S[n+1] = Q(S[n], candidates[n], certificates[n], evidence[n])`
+`S_(n+1) = Q(S_n, E_n)`
 
-where `Q` updates a declarative mathematical intermediate representation rather than blindly rewriting executable source.
+where `E_n` is verified evidence. The source/runtime should not arbitrarily rewrite executable code. Instead, the evolving object is a declarative strategy/field state that can be compiled into deterministic runtime components.
 
-The intended invariant is:
-
-`new state ← verified old state`
-
-not
-
-`new state ← arbitrary self-modification`.
-
-The resulting model is a **certificate-driven self-referential mathematical compiler**.
-
-## Pipeline model
+The durable loop is:
 
 ```text
-Problem
-  ↓
-Profiler
-  ↓
-Representation selection
-  ↓
-Strategy graph
-  ↓
-Exact + approximate solver branches
-  ↓
-Shared mathematical field
-  ↓
-Audio / gesture / camera modulation
-  ↓
-GPU/SIMD execution
-  ↓
-Offscreen mirror + branch graph
-  ↓
-Composite
-  ↓
-Residual / convergence / proof evidence
-  ↓
-Certificate ledger
-  ↓
-Strategy score update
-  ↓
-Next iteration
+State
+ -> compute
+ -> observe
+ -> verify
+ -> record evidence
+ -> update strategy graph
+ -> produce next state
 ```
 
-## Current examples
+This preserves provenance and keeps approximation separate from proof.
 
-The first examples in this iteration are intentionally small enough to audit while exercising the architecture:
+## Examples
 
-1. **Diophantine Rotor** — classify a Pell equation, invoke exact integer reduction, and attach a rotor-style strategy state.
-2. **Audio-Reactive SDF** — turn frequency-band amplitudes into deformation parameters for an implicit field.
-3. **Mirror Branch Field** — fork one field state into multiple transformed offscreen branches and compare their residuals.
-4. **Self-Reference Ledger** — preserve immutable state snapshots, method decisions, evidence, and next-strategy recommendations.
+- `examples/01-diophantine-rotor.wl` — exact Wolfram Diophantine reduction wrapped in rotor strategy state.
+- `examples/02-audio-reactive-sdf.html` — browser field demonstration with microphone-driven modulation.
+- `examples/03-mirror-branch-field.html` — branch/mirror visualization model.
+- `examples/04-self-reference-ledger.py` — evidence-driven self-reference ledger.
 
-See `examples/` and `field-runtime/`.
+## Electron CI
 
-## Implementation boundary
-
-NEXUS is intended to separate responsibilities:
-
-| Layer | Responsibility |
-|---|---|
-| Wolfram Language | exact symbolic mathematics, algebraic/Diophantine reduction, validation |
-| Mathematical IR | portable representation of problem, field, strategy, and certificate state |
-| CPU/SIMD | orchestration and lower-level numerical kernels |
-| GPU/GLSL/WebGPU/CUDA | high-throughput field evaluation and ray marching |
-| Neural implicit layer | adaptive approximation / learned field representation |
-| Rotor controller | strategy selection and state evolution |
-| Offscreen graph | branch, mirror, feedback, and compositing topology |
-| Ledger | provenance, certificates, performance, and reproducibility |
-
-## Status
-
-This is a research/runtime architecture. The current branch establishes the mathematical model, runnable examples, and implementation contracts. It does **not** claim universal Diophantine decidability, universal transcendence proving, zero-latency execution, or quantum computation.
+`.github/workflows/electron-runtime.yml` downloads the Electron runtime with npm, verifies the Electron executable version, and syntax-checks the desktop main/preload sources on pushes and pull requests affecting the runtime.
 
 ## Roadmap
 
-- [ ] Wolfram Language strategy registry
-- [ ] exact certificate schema
-- [ ] shared field binary/JSON IR
-- [ ] WebGPU SDF renderer
-- [ ] asynchronous solver worker
-- [ ] audio FFT worker
-- [ ] gesture input worker
-- [ ] offscreen branch compositor
-- [ ] strategy scoring ledger
-- [ ] replayable self-restructuring loop
-- [ ] neural implicit/hash-grid adapter
-- [ ] benchmark suite across Diophantine, geometric, and field problems
+### v0.3
 
-## Research framing
+- WebGPU compute path
+- structured field-buffer layout
+- shared worker/render-worker protocol
+- deterministic branch IDs
+- streamed solver state ingestion
+- exact Wolfram result serialization into Field IR
 
-The architecture treats mathematics as executable state, geometry as a field, rendering as observation, and optimization as a feedback process. The objective is a runtime in which a new exact mathematical result can alter the field, a field observation can alter computational allocation, and verified evidence can alter the next solver configuration — while retaining an auditable chain of state transitions.
+### v0.4
+
+- offscreen compositor graph
+- triple-frame temporal field analysis
+- SDF ray marcher
+- audio FFT worker
+- gesture worker
+- residual/error feedback into rotor weights
+
+### v0.5
+
+- strategy graph persistence
+- certificate ledger
+- neural implicit field adapter
+- multiresolution hash-grid adapter
+- CUDA/native compute bridge where available
+
+### v1.0 target
+
+A reproducible, branchable Mathematical Field Operating Environment in which exact mathematical reasoning, approximate numerical exploration, heterogeneous compute, and real-time visualization share a versioned state protocol.
+
+## Scope boundary
+
+This is a research architecture. It does not claim universal decidability of Diophantine/transcendence problems, zero-latency computation, or quantum computation. It explicitly distinguishes exact certificates from numerical/neural approximations.
