@@ -1,0 +1,31 @@
+name: NEXUS Electron Runtime
+
+on:
+  push:
+    paths:
+      - 'desktop/electron/**'
+      - 'field-runtime/**'
+      - '.github/workflows/electron-runtime.yml'
+  pull_request:
+    paths:
+      - 'desktop/electron/**'
+      - 'field-runtime/**'
+      - '.github/workflows/electron-runtime.yml'
+
+jobs:
+  electron-runtime:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: desktop/electron
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Download Electron runtime
+        run: npm install --no-audit --no-fund
+      - name: Verify Electron
+        run: npm run electron:version
+      - name: Verify source tree
+        run: node --check main.js && node --check preload.js
