@@ -2,26 +2,30 @@
 
 > A research runtime that treats mathematics, implicit geometry, solver state, audio/gesture streams, and rendering as coordinated views of a shared Mathematical Field Intermediate Representation (Field IR).
 
-## v0.2 integration pass
+## v0.3 — ADAM / controller integration
 
-This iteration turns the earlier architecture into an executable integration boundary.
+This iteration promotes the project state into an append-oriented **ADAM** integration record and adds two device/runtime targets:
 
-The central idea is:
+- **Samsung A15 + Termux** — operator/controller plane.
+- **Gaia's Window (`gaiaswindow`)** — secondary compatible runtime with auto-configuration/bootstrap behavior.
+
+Canonical state: `adam/ADAM_FIELD_RUNTIME_STATE.md`.
 
 ```text
-problem
-  -> mathematical profiler
-  -> exact/approximate strategy selection
-  -> Mathematical Field IR
-  -> field/rotor evolution
-  -> GPU/browser rendering
-  -> observation + residuals
-  -> certificate
-  -> strategy update
-  -> next field state
+Operator Controller
+       |
+       v
+Field IR
+       |
+       +--> Wolfram exact mathematics
+       +--> Electron field runtime
+       +--> Gaia's Window
+       +--> GPU/WebGPU renderer
+       +--> evidence/certificate ledger
+       |
+       v
+next verified field state
 ```
-
-The field is the common interface. The renderer does not merely display a solver result; both consume the same versioned state representation.
 
 ## Mathematical Field IR
 
@@ -48,7 +52,7 @@ A field state can carry:
 
 ## Solver ecology
 
-The architecture accommodates specialized exact and approximate strategies rather than pretending one algorithm solves every problem:
+The architecture accommodates specialized exact and approximate strategies:
 
 - algebraic: factorization, resultants, Gröbner bases, CAD, root isolation
 - Diophantine: HNF/lattice methods, Pell, Thue, modular filters, continued fractions
@@ -61,7 +65,7 @@ Exact symbolic/certificate results remain authoritative. Numeric and neural laye
 
 ## Rotor controller
 
-The rotor is a classical adaptive strategy controller. Its state can contain phase, amplitude, coupling, and representation metadata. A rotor does **not** claim quantum computation or quantum advantage; it is a mathematical state-space abstraction for selecting and blending computational strategies.
+The rotor is a classical adaptive strategy controller. Its state can contain phase, amplitude, coupling, and representation metadata. It does **not** claim quantum computation or quantum advantage.
 
 For geometric transformations the intended hierarchy is:
 
@@ -69,29 +73,17 @@ For geometric transformations the intended hierarchy is:
 scalar -> vector -> complex -> quaternion -> Clifford rotor
 ```
 
-with quaternions serving as a compact spatial fallback and Clifford rotors providing the generalized geometric-algebra representation.
-
 ## Real-time field rendering
 
 `desktop/electron/renderer/index.html` demonstrates the shared-field boundary in a browser renderer.
 
-The renderer currently provides:
+The renderer currently provides continuous SDF-derived state, pointer/gesture input, microphone input when permission is granted, frame progression, state branches, and residual display.
 
-- continuous SDF-derived field state
-- pointer/gesture input
-- microphone amplitude/spectrum input when permission is granted
-- frame state progression
-- two state branches derived from a common snapshot
-- live residual display
-- browser Canvas rendering
-
-The architecture is intentionally asynchronous. A difficult symbolic computation should not block rendering. Target frame budgets depend on actual hardware and pipeline load; this is not a zero-latency claim.
+The architecture is asynchronous. A difficult symbolic computation should not block rendering. Target frame budgets depend on hardware and workload.
 
 ## Electron runtime
 
-`desktop/electron/` provides a dedicated desktop browser shell prepared for the field runtime.
-
-### Download/configure/run
+`desktop/electron/` provides the desktop browser shell.
 
 ```bash
 cd desktop/electron
@@ -100,115 +92,156 @@ npm run electron:version
 npm start
 ```
 
-The first `npm install` downloads the pinned Electron major-version runtime declared in `package.json`.
-
-For a bootstrap that installs Electron when missing and launches with the runtime flags:
+Or:
 
 ```bash
 ./launch-field-runtime.sh
 ```
 
-Useful variants:
+Debug/software variants:
 
 ```bash
 npm run start:debug
 npm run start:software
 ```
 
-The shell uses an isolated preload bridge (`contextIsolation: true`, `nodeIntegration: false`, sandboxing) and requests GPU/WebGPU-related Chromium features where supported by the host build. Actual acceleration remains hardware/driver dependent.
+The shell uses an isolated preload bridge with context isolation, disabled Node integration, sandboxing, and requested GPU/WebGPU-related Chromium capabilities where supported by the host.
 
-## Runtime branching
+## Samsung A15 operator controller
 
-A state can be forked:
+The Termux bootstrap lives at `controller/termux/nexus-a15-bootstrap.sh`.
+
+The A15 is the operator/control plane for:
+
+- runtime health/status
+- Field IR synchronization metadata
+- branch selection
+- audio/gesture stream forwarding
+- operator actions
+- evidence/log inspection
+
+Bootstrap from the active branch:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/NexusCryptic/NEXUS/feat/mathematical-field-runtime-v0.1/controller/termux/nexus-a15-bootstrap.sh -o "$PREFIX/tmp/nexus-a15-bootstrap.sh" && bash "$PREFIX/tmp/nexus-a15-bootstrap.sh"
+```
+
+Then:
+
+```bash
+nexus-a15 status
+nexus-a15 health
+nexus-a15 init
+```
+
+The bootstrap is idempotent in structure, logs locally, installs required Termux packages, detects the native Termux environment through its shebang, and contains no credentials.
+
+## Gaia's Window secondary runtime
+
+`gaiaswindow/bootstrap.sh` provides the secondary compatible runtime target.
+
+It:
+
+1. creates an isolated runtime state directory;
+2. verifies Node/npm;
+3. creates the Field IR runtime contract;
+4. generates a minimal state boundary;
+5. performs a source check;
+6. records the resulting state locally.
+
+The compatibility contract is **Field IR**, not a particular GUI.
+
+## Runtime branching and offscreen architecture
+
+A state snapshot can branch:
 
 ```text
 S0
 ├── branch-A: geometry/visual evolution
 ├── branch-B: solver-guided evolution
-└── branch-C: audio/gesture evolution
+├── branch-C: audio/gesture evolution
+└── branch-D: neural/approximation evolution
 ```
 
-Each branch receives the same state boundary and can evolve independently. Later versions can add deterministic merge operators and state-difference metrics.
-
-## Offscreen/mirror architecture
-
-The next rendering layer can maintain:
-
-```text
-Field State
-   |
-   +--> Renderer A
-   |
-   +--> Offscreen Renderer B
-   |
-   +--> Transformed Mirror C
-   |
-   +--> Neural/implicit approximation D
-            |
-            +--> compositor
-```
-
-The important unit is the state snapshot rather than the pixels. This allows branches to become separate computational runtimes and makes streamed data pipelines composable.
+The snapshot—not the pixels—is the branching unit. Future compositor layers can create offscreen mirrors, temporal transforms, and independent runtime branches while retaining provenance.
 
 ## Audio and gesture as forcing functions
 
-A future audio layer can map spectral bands into field parameters:
+Audio spectral magnitudes can map into field parameters:
 
 `A_k(t) = |FFT(x(t))_k|`
 
-and construct a field such as:
+and gesture can be represented by position, velocity, acceleration, confidence, and externally supplied measurements.
 
-`f_audio = f_base + A_bass S_scale + A_mid S_rotation + A_high S_detail`
+These are visualization/control mechanisms, not medical diagnostic systems.
 
-Gesture can similarly be represented as a vector/time state containing position, velocity, acceleration, confidence, and optional externally supplied measurements.
+## Self-reference
 
-These mappings are visualization/control mechanisms, not medical diagnostic systems.
-
-## Self-reference without uncontrolled self-modification
-
-The intended self-restructuring model is:
+The intended restructuring model is:
 
 `S_(n+1) = Q(S_n, E_n)`
 
-where `E_n` is verified evidence. The source/runtime should not arbitrarily rewrite executable code. Instead, the evolving object is a declarative strategy/field state that can be compiled into deterministic runtime components.
+where `E_n` is verified evidence. The mutable object is declarative strategy/field state, not uncontrolled arbitrary executable self-modification.
 
-The durable loop is:
+## ADAM
+
+ADAM is the append-oriented canonical accumulator for this project iteration. It records architectural invariants, mathematical strategies, Field IR semantics, runtime branch semantics, controller/device targets, bootstrap requirements, optimization policies, and provenance/revision state.
+
+ADAM explicitly excludes credentials, private keys, and device secrets.
+
+## Device matrix
+
+| Target | Role | Bootstrap | Heavy compute |
+|---|---|---|---|
+| Samsung A15 + Termux | operator/controller | `controller/termux/nexus-a15-bootstrap.sh` | optional/local lightweight |
+| Gaia's Window | secondary compatible runtime | `gaiaswindow/bootstrap.sh` | host-dependent |
+| Electron | desktop field browser/runtime | npm + Electron | GPU-dependent |
+| Wolfram | exact mathematical authority | Wolfram environment | symbolic/exact |
+
+## Optimization policy
+
+1. Preserve exactness/certificates.
+2. Never block the render loop on a long symbolic task.
+3. Reuse immutable field snapshots.
+4. Branch work asynchronously.
+5. Move dense field evaluation to GPU when available.
+6. Use multiresolution representations where appropriate.
+7. Adapt precision to residual/error requirements.
+8. Cache stable symbolic/geometric intermediates.
+9. Use neural approximations only where approximation is explicit.
+10. Record performance evidence for future strategy selection.
+
+## Current repository integration
 
 ```text
-State
- -> compute
- -> observe
- -> verify
- -> record evidence
- -> update strategy graph
- -> produce next state
+adam/ADAM_FIELD_RUNTIME_STATE.md
+field-runtime/core/field-ir.schema.json
+field-runtime/core/field-runtime.js
+controller/termux/nexus-a15-bootstrap.sh
+controller/termux/README.md
+gaiaswindow/bootstrap.sh
+examples/01-diophantine-rotor.wl
+examples/02-audio-reactive-sdf.html
+examples/03-mirror-branch-field.html
+examples/04-self-reference-ledger.py
+desktop/electron/
+.github/workflows/electron-runtime.yml
 ```
-
-This preserves provenance and keeps approximation separate from proof.
-
-## Examples
-
-- `examples/01-diophantine-rotor.wl` — exact Wolfram Diophantine reduction wrapped in rotor strategy state.
-- `examples/02-audio-reactive-sdf.html` — browser field demonstration with microphone-driven modulation.
-- `examples/03-mirror-branch-field.html` — branch/mirror visualization model.
-- `examples/04-self-reference-ledger.py` — evidence-driven self-reference ledger.
-
-## Electron CI
-
-`.github/workflows/electron-runtime.yml` downloads the Electron runtime with npm, verifies the Electron executable version, and syntax-checks the desktop main/preload sources on pushes and pull requests affecting the runtime.
 
 ## Roadmap
 
-### v0.3
+### v0.4
 
 - WebGPU compute path
-- structured field-buffer layout
+- structured field buffers
 - shared worker/render-worker protocol
 - deterministic branch IDs
 - streamed solver state ingestion
 - exact Wolfram result serialization into Field IR
+- A15 controller protocol
+- Gaia's Window state synchronization
 
-### v0.4
+### v0.5
 
 - offscreen compositor graph
 - triple-frame temporal field analysis
@@ -216,18 +249,20 @@ This preserves provenance and keeps approximation separate from proof.
 - audio FFT worker
 - gesture worker
 - residual/error feedback into rotor weights
-
-### v0.5
-
 - strategy graph persistence
 - certificate ledger
+
+### v0.6+
+
 - neural implicit field adapter
 - multiresolution hash-grid adapter
 - CUDA/native compute bridge where available
+- branch comparison/merge operators
+- reproducible runtime snapshots
 
 ### v1.0 target
 
-A reproducible, branchable Mathematical Field Operating Environment in which exact mathematical reasoning, approximate numerical exploration, heterogeneous compute, and real-time visualization share a versioned state protocol.
+A reproducible, branchable Mathematical Field Operating Environment in which exact mathematical reasoning, approximate numerical exploration, heterogeneous compute, operator control, and real-time visualization share a versioned state protocol.
 
 ## Scope boundary
 
