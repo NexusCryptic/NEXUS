@@ -1,0 +1,30 @@
+name: ADAM Continuity Cycle
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate ADAM kernel
+        run: python -m py_compile ADAM/core/adam.py tools/generate_enhancement_matrix.py
+      - name: Generate enhancement matrix
+        run: python tools/generate_enhancement_matrix.py
+      - name: Validate generated matrix
+        run: |
+          python - <<'PY'
+          import json
+          p='ADAM/generated/enhancements-1000.json'
+          rows=json.load(open(p,encoding='utf-8'))
+          assert len(rows)==1000
+          assert len({r['id'] for r in rows})==1000
+          assert all(r['evidence'] and r['verification'] for r in rows)
+          print('ADAM matrix: 1000 records verified')
+          PY
